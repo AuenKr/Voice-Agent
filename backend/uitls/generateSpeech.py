@@ -14,7 +14,7 @@ async def generate_speech(text, websocket):
             voice="nova",  # You can change the voice model as needed
             input=text,
         )
-
+        print("Generated the speech part")
         # Create a BytesIO object to store the binary audio response
         audio_io = io.BytesIO()
 

@@ -34,23 +34,28 @@ async def websocket_endpoint(websocket: WebSocket):
 
             print("Processing received audio chunk...")
             # Convert audio data to WAV format with 16-bit, 16kHz, mono
-            audio_segment = AudioSegment.from_file(audio_data, format="webm")
-            audio_segment = audio_segment.set_frame_rate(16000).set_sample_width(2).set_channels(1)
-            wav_io = io.BytesIO()
-            audio_segment.export(wav_io, format="wav")
-            wav_io.seek(0)
+            try:
+                audio_segment = AudioSegment.from_file(audio_data, format="webm")
+                audio_segment = audio_segment.set_frame_rate(16000).set_sample_width(2).set_channels(1)
+                wav_io = io.BytesIO()
+                audio_segment.export(wav_io, format="wav")
+                wav_io.seek(0)
 
-            # Transcribe audio data using OpenAI SST API
-            transcription = await asyncio.to_thread(transcribe_whisper_api, wav_io)
-            print(f"Transcribed text: {transcription}")
+                # Transcribe audio data using OpenAI SST API
+                transcription = await asyncio.to_thread(transcribe_whisper_api, wav_io)
+                print(f"Transcribed text: {transcription}")
 
-            print("Send transcribe chunk to frontend")
-            # Send the transcription to the client
-            await websocket.send_text(json.dumps({'type': 'text', 'content': transcription}))
+                # Send the transcription to the client
+                await websocket.send_text(json.dumps({'type': 'text', 'content': transcription}))
+                print("Transcription sent to the frontend")
 
-            print("Started generation response for user")
-            # Stream GPT-4 response and TTS audio back to the client (generated audio as bytes)
-            await generate_response_and_audio(transcription, websocket)
+                # Stream GPT-4 response and TTS audio back to the client (generated audio as bytes)
+                await generate_response_and_audio(transcription, websocket)
+
+            except Exception as e:
+                print(f"Error processing audio chunk: {e}")
+                # Send an error message back to the frontend if needed
+                await websocket.send_text(json.dumps({'type': 'error', 'content': 'Failed to process audio chunk'}))
 
     except WebSocketDisconnect:
         print("Client disconnected")
