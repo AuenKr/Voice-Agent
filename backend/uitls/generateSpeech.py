@@ -24,6 +24,9 @@ async def generate_speech(text, websocket):
         # Reset the buffer's position to the beginning
         audio_io.seek(0)
 
+        with open("response.wav", "wb") as temp_wav_file:
+            temp_wav_file.write(audio_io.read())
+
         # Send the generated audio as bytes to the websocket client
         await websocket.send_bytes(audio_io.getvalue())
     except Exception as e:

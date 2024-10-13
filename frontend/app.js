@@ -18,10 +18,14 @@ window.addEventListener("load", () => {
 
   socket.onmessage = async (event) => {
     console.log("Received message from server");
-    const message = JSON.parse(event.data);
+    if (typeof event.data === "string") {
+      const message = JSON.parse(event.data);
 
-    // Create a new chat box for the message
-    createChatBox(message);
+      // Create a new chat box for the message
+      createChatBox(message);
+    } else {
+        await playAudio(event.data);
+    }
   };
 
   socket.onerror = (error) => {
@@ -46,7 +50,7 @@ recordButton.addEventListener("click", () => {
 
 async function startRecording() {
   try {
-    // audioChunks = [];
+    audioChunks = [];
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     console.log("Microphone access granted");
 
@@ -85,28 +89,39 @@ function stopRecording() {
   }
 }
 
+// async function playAudio(data) {
+//   if (audioContext) {
+//     audioContext.close();
+//     console.log("Previous audio context closed");
+//   }
+//   audioContext = new (window.AudioContext || window.webkitAudioContext)();
+//   console.log("Created new audio context");
+
+//   try {
+//     const arrayBuffer =
+//       data instanceof ArrayBuffer ? data : await data.arrayBuffer();
+//     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+//     console.log("Decoded audio data");
+
+//     const source = audioContext.createBufferSource();
+//     source.buffer = audioBuffer;
+//     source.connect(audioContext.destination);
+//     source.start(0);
+//     console.log("Started audio playback");
+//   } catch (error) {
+//     console.error("Error playing audio:", error);
+//   }
+// }
+
 async function playAudio(data) {
-  if (audioContext) {
-    audioContext.close();
-    console.log("Previous audio context closed");
-  }
-  audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  console.log("Created new audio context");
+    // Create a new Blob from the received audio data
+    const audioBlob = new Blob([data], { type: 'audio/wav' });
+    const audioUrl = URL.createObjectURL(audioBlob); // Create a URL for the Blob
 
-  try {
-    const arrayBuffer =
-      data instanceof ArrayBuffer ? data : await data.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    console.log("Decoded audio data");
-
-    const source = audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(audioContext.destination);
-    source.start(0);
-    console.log("Started audio playback");
-  } catch (error) {
-    console.error("Error playing audio:", error);
-  }
+    // Create an audio element and set its source
+    const audioElement = new Audio(audioUrl);
+    audioElement.play(); // Play the audio
+    console.log('Started audio playback');
 }
 
 function createChatBox(message) {
